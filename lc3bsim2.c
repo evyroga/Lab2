@@ -407,7 +407,43 @@ int main(int argc, char *argv[]) {
 
 /***************************************************************/
 
+int power (int a, int b) {
+	if (b==0) return 1;
+	
+	int num = 1;
+	for(int i = 0; i < b; i++) {
+		num = num*a;
+	}
+	return num;
+}
 
+
+
+
+
+/***************************************************************** 
+Returns decimal offset (PCoffset, offset6, imm5, etc.)
+******************************************************************/
+int convertOffset(int bitrep[16], int index, int width) {
+	int decOffset = 0;
+	int isNegative = 0;
+	// Check if offset is negative
+	if(bitrep[index] == 1) {
+		isNegative = 1;
+		for(int j = 0; j < width - 1; j++) {
+			bitrep[j] = !bitrep[j];
+		}
+	}
+	for (int i = 0; i < width - 1; i++ ) {
+		int bitVal = bitrep[i]*power(2,i);
+		decOffset += bitVal;
+	}
+	if(isNegative) {
+		decOffset = decOffset + 1;
+		decOffset = decOffset*(-1);
+	}
+	return decOffset;
+}
 
 /***************************************************************/
 /* Returns bit representation where bitrep[16] is the 
@@ -444,7 +480,15 @@ int getRegisterNumber(int bitrep[16], int index) {
 void add(int bitrep[16]) {
 	printf("Reached add");
 	int DR = getRegisterNumber(bitrep, 11);
-	int SR = getRegisterNumber(bitrep, 8);
+	int SR1 = getRegisterNumber(bitrep, 8);
+	if (bitrep[10] == 0) {
+		SR2 = getRegisterNumber(bitrep,2);
+		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + CURRENT_LATCHES.REGS[SR2];
+	}
+	else {
+		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + getOffset(bitrep, 4, 5);
+	}
+	//set condition codes;
 }
 
 void process_instruction(){
@@ -463,11 +507,21 @@ void process_instruction(){
 	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
 	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
 
-    int bitrep[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    decToBitRep(decLSB, decMSB, bitrep); 
+    	int bitrep[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    	decToBitRep(decLSB, decMSB, bitrep); 
+
+
+
+	int offset = convertOffset(bitrep, 4, 5);
+	printf("offset is %d", offset);
+
+
+
+
+
 
 	// check opcode
-	int opcode = bitrep[15]*pow(2,3) + bitrep[14]*pow(2,2) + bitrep[13]*pow(2,1) + bitrep[12]*pow(2,0);
+	int opcode = bitrep[15]*power(2,3) + bitrep[14]*power(2,2) + bitrep[13]*power(2,1) + bitrep[12]*power(2,0);
 	switch (opcode) {
 		case(1): 
 			add(bitrep);
