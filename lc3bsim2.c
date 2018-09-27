@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 /***************************************************************/
 /*                                                             */
@@ -408,6 +409,44 @@ int main(int argc, char *argv[]) {
 
 
 
+/***************************************************************/
+/* Returns bit representation where bitrep[16] is the 
+   most significant bit. */
+/***************************************************************/
+void decToBitRep(int decLSB, int decMSB, int bitrep[16]) {
+	// least significant bits
+	int curr_byte = decLSB;
+	for (int i = 0; i < 8; i++) {
+		int bit = curr_byte % 2;
+		curr_byte = curr_byte / 2;
+		bitrep[i] = bit;
+	}
+	// most significant bits
+	curr_byte = decMSB;
+	for (int j = 8; j < 16; j++) {
+		int bit = curr_byte % 2;
+		curr_byte = curr_byte / 2;
+		bitrep[j] = bit;
+	} 
+}
+
+/*
+Returns a register number in range 0-7. 
+Requires the bit representation and the high bit index for the register.
+*/
+
+int getRegisterNumber(int bitrep[16], int index) {
+	int regNum = bitrep[index]*pow(2,2) + bitrep[index-1]*pow(2,1) + bitrep[index-2]*pow(2,0);
+	return regNum;
+
+}
+
+void add(int bitrep[16]) {
+	printf("Reached add");
+	int DR = getRegisterNumber(bitrep, 11);
+	int SR = getRegisterNumber(bitrep, 8);
+}
+
 void process_instruction(){
   /*  function: process_instruction
    *  
@@ -417,5 +456,26 @@ void process_instruction(){
    *       -Execute
    *       -Update NEXT_LATCHES
    */     
+	printf("CURRENT PC: %d\n", CURRENT_LATCHES.PC);
+	printf("LSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][0]); 	
+	printf("MSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][1]);
+   
+	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
+	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
 
+    int bitrep[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    decToBitRep(decLSB, decMSB, bitrep); 
+
+	// check opcode
+	int opcode = bitrep[15]*pow(2,3) + bitrep[14]*pow(2,2) + bitrep[13]*pow(2,1) + bitrep[12]*pow(2,0);
+	switch (opcode) {
+		case(1): 
+			add(bitrep);
+			break;
+		default:
+			printf("Invalid opcode");
+			break;
+	}
+
+	exit(0);
 }
