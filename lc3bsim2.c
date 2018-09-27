@@ -478,15 +478,17 @@ int getRegisterNumber(int bitrep[16], int index) {
 }
 
 void add(int bitrep[16]) {
-	printf("Reached add");
 	int DR = getRegisterNumber(bitrep, 11);
 	int SR1 = getRegisterNumber(bitrep, 8);
+	
+	printf("Reached add\n");
+	
 	if (bitrep[10] == 0) {
-		SR2 = getRegisterNumber(bitrep,2);
+		int SR2 = getRegisterNumber(bitrep,2);
 		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + CURRENT_LATCHES.REGS[SR2];
 	}
 	else {
-		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + getOffset(bitrep, 4, 5);
+		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + convertOffset(bitrep, 4, 5);
 	}
 	//set condition codes;
 }
