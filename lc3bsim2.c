@@ -483,15 +483,116 @@ void add(int bitrep[16]) {
 	
 	printf("Reached add\n");
 	
-	if (bitrep[10] == 0) {
+	if (bitrep[5] == 0) {
 		int SR2 = getRegisterNumber(bitrep,2);
-		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + CURRENT_LATCHES.REGS[SR2];
+		NEXT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + CURRENT_LATCHES.REGS[SR2];
 	}
 	else {
-		CURRENT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + convertOffset(bitrep, 4, 5);
+		NEXT_LATCHES.REGS[DR] = CURRENT_LATCHES.REGS[SR1] + convertOffset(bitrep, 4, 5);
 	}
 	//set condition codes;
 }
+
+void lea(int bitrep[16]){
+    //get register
+    //find pcoffset
+    //put into register
+
+    int DR = getRegisterNumber(bitrep, 11);
+    int off = convertOffset(bitrep, 8, 9);
+    NEXT_LATCHES.REGS[DR] = CURRENT_LATCHES.PC + (2*off); //remember to multiple offset by 2)
+}
+
+void nop(int bitrep[16]){
+    //nothing, just increment PC
+}
+
+void notxor(int bitrep[16]){
+    int DR = getRegisterNumber(bitrep, 11);
+    int SR1 = getRegisterNumber(bitrep, 8);
+
+    if(bitrep[5] == 0){
+        int imm = convertOffset(bitrep, 4,5);
+        if(imm == -15){
+            //not...
+            int dec = ~(CURRENT_LATCHES.REGS[SR1]);
+            NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+        }else{
+            //xor with imm5
+            int dec = (CURRENT_LATCHES.REGS[SR1]) ^ imm;
+            NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+        }
+    }else{
+        int SR2 = getRegisterNumber(bitrep, 2);
+        int dec = (CURRENT_LATCHES.REGS[SR1]) ^ (CURRENT_LATCHES.REGS[SR2]);
+        NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+    }
+}
+
+void retjmp(int bitrep[16]){
+    int br = getRegisterNumber(bitrep, 8);
+    NEXT_LATCHES.PC = CURRENT_LATCHES.REGS[br];
+}
+
+void lshf(int bitrep[16]){
+    int DR = getRegisterNumber(bitrep, 11);
+    int SR = getRegisterNumber(bitrep, 8);
+    int shift = convertOffset(bitrep, 3, 4);
+    int dec = CURRENT_LATCHES.REGS[SR] << shift;
+    NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+}
+
+void rshfl(int bitrep[16]){
+    int DR = getRegisterNumber(bitrep, 11);
+    int SR = getRegisterNumber(bitrep, 8);
+
+    int shift = convertOffset(bitrep, 3, 4);
+    int val = CURRENT_LATCHES.REGS[SR];
+    if(val < 0){
+        int shift_and = 0;
+        for(int sh = 0; sh < shift; sh++){
+            shift_and = shift_and + power(2, sh);
+        }
+        shift_and = ~(shift_and << (16 - shift));
+        val = val & shift_and;
+        NEXT_LATCHES.REGS[DR] = Low16bits(val);
+        
+    }else{
+        val = val >> shift;
+        NEXT_LATCHES.REGS[DR] = Low16bits(val);
+    }
+}
+
+void rshfa(int bitrep[16]){
+    int DR = getRegisterNumber(bitrep, 11);
+    int SR = getRegisterNumber(bitrep, 8);
+    int shift = convertOffset(bitrep, 3,4);
+    int dec = CURRENT_LATCHES.REGS[SR] >> shift;
+    NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+}
+
+void stb(int bitrep[16]){
+    int SR = getRegisterNumber(bitrep, 11);
+    int BR = getRegisterNumber(bitrep, 8);
+    int offset = convertOffset(bitrep, 5, 6);
+
+    int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
+    dec = (0x00FF) & dec;
+    //confused, it is not changing the base register
+     // the contents in SR go inside the ADDRESS in BR... not br itself?
+             //wat do i do then
+
+}
+
+void stw(int bitrep[16]){
+    int SR = getRegisterNumber(bitrep, 11);
+    int BR = getRegisterNumber(bitrep, 8);
+    int offset = convertOffset(bitrep, 5, 6);
+
+    int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
+
+}
+
 
 void process_instruction(){
   /*  function: process_instruction
@@ -517,21 +618,50 @@ void process_instruction(){
 	int offset = convertOffset(bitrep, 4, 5);
 	printf("offset is %d", offset);
 
-
-
-
-
-
 	// check opcode
+    NEXT_LATCHES.PC = CURRENT_LATCHES.PC + 0x02;
 	int opcode = bitrep[15]*power(2,3) + bitrep[14]*power(2,2) + bitrep[13]*power(2,1) + bitrep[12]*power(2,0);
 	switch (opcode) {
-		case(1): 
+	    case(0):
+	        //nop
+            //basically BR---, just update pc
+	        break;
+	    case(1):
 			add(bitrep);
 			break;
+	    case(3):
+	        //stb
+	        break;
+	    case(7):
+	        //stw
+	        break;
+        case(9):
+            //not or xor
+
+            break;
+        case(12):
+            // jmp or ret
+            break;
+	    case(13):
+	        //lshf, rshfl, rshfa
+            if((bitrep[5] + bitrep[4]) == 0){
+                //lshf
+                lshf(bitrep);
+            }else if((bitrep[5] + bitrep[4]) == 1){
+                //logical
+                rshfl(bitrep);
+            }else{
+                //arithmetic
+                rshfa(bitrep);
+            }
+	        break;
+	    case(14):
+	        //lea
+	        break;
 		default:
 			printf("Invalid opcode");
 			break;
 	}
 
-	exit(0);
+    //update CC
 }
