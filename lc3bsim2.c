@@ -681,6 +681,7 @@ void rshfa(int bitrep[16]){
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
 }
 
+
 void stb(int bitrep[16]){
     int SR = getRegisterNumber(bitrep, 11);
     int BR = getRegisterNumber(bitrep, 8);
@@ -688,10 +689,10 @@ void stb(int bitrep[16]){
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
     dec = (0x00FF) & dec;
-    //confused, it is not changing the base register
-    // the contents in SR go inside the ADDRESS in BR... not br itself?
-    //wat do i do then
-
+    int base = CURRENT_LATCHES.REGS[BR];
+    base = base + (offset *2);
+    MEMORY[base][0] = dec;
+    MEMORY[base][1] = 0x0000;
 }
 
 void stw(int bitrep[16]){
@@ -700,6 +701,13 @@ void stw(int bitrep[16]){
     int offset = convertOffset(bitrep, 5, 6);
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
+    int MSB = (dec >> 8) & 0xFF00;
+    int LSB = dec & 0x00FF;
+
+    int base = CURRENT_LATCHES.REGS[BR];
+    base = base + (offset * 2);
+    MEMORY[base][0] = LSB;
+    MEMORY[base][1] = MSB;
 
 }
 
