@@ -552,22 +552,18 @@ void br(int bitrep[16]){
     }
 }
 
-
+// PLEASE FIX BELOW
 void trap_(int bitrep[16]) {
     printf("Reached trap\n");
-
     // R7 = PC
     NEXT_LATCHES.REGS[7] = CURRENT_LATCHES.PC;
 
-    // ???DO WE SET PC = 0?
     int unsignedValue = getUnsignedValue(bitrep, 7, 8);
-    // REACHED HALT!
-    if(unsignedValue == 37) {
-        // ???WHAT DO WE PUT HERE?
+    if(unsignedValue == 37) { // Reached HALT
+        NEXT_LATCHES.PC = 0x25;
     }
     int pcValue = MEMORY[(unsignedValue << 1)];
     NEXT_LATCHES.PC = pcValue;
-
 }
 
 void jsr_(int bitrep[16]) {
@@ -589,14 +585,9 @@ void ldb(int bitrep[16]) {
     int BaseR = getRegisterNumber(bitrep, 8);
     int boffset6 = convertOffset(bitrep, 5, 6);
 
-    // FOR TESTING PURPOSES... delete below //
-    MEMORY[0x4000][0] = 0x0001; //
-    MEMORY[0x4000][1] = 0x0000; //
-    int BaseRValue = 0x4000; //
-
-
-    //int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
-    int valueToLoad = MEMORY[BaseRValue + boffset6][0] & 0x0F; // get bottom 8 bits
+    int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
+    int address = (BaseRValue + boffset6)/2;
+    int valueToLoad = MEMORY[address][0] & 0x0F; // get bottom 8 bits
 
     // ???IS THE SIGN PRESERVED IN valueToLoad
 
