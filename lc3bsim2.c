@@ -543,7 +543,6 @@ void and(int bitrep[16]) {
     setCC(result);
 }
 
-// TEST
 void br(int bitrep[16]){
     printf("Reached br\n");
     if (bitrep[11] && CURRENT_LATCHES.N || bitrep[10] && CURRENT_LATCHES.Z || bitrep[9] && CURRENT_LATCHES.P) {
@@ -560,10 +559,11 @@ void trap_(int bitrep[16]) {
     // R7 = PC
     NEXT_LATCHES.REGS[7] = CURRENT_LATCHES.PC;
 
+    // ???DO WE SET PC = 0?
     int unsignedValue = getUnsignedValue(bitrep, 7, 8);
     // REACHED HALT!
     if(unsignedValue == 37) {
-        RUN_BIT = 0;
+        // ???WHAT DO WE PUT HERE?
     }
     int pcValue = MEMORY[(unsignedValue << 1)];
     NEXT_LATCHES.PC = pcValue;
@@ -571,6 +571,7 @@ void trap_(int bitrep[16]) {
 }
 
 void jsr_(int bitrep[16]) {
+    // make sure you GET RIGHT LATCHES... change below to NEXT_LATCHES???
     int temp = CURRENT_LATCHES.PC;
     if (bitrep[11] == 0) {
         int baseR = getRegisterNumber(bitrep, 8);
@@ -587,9 +588,19 @@ void ldb(int bitrep[16]) {
     int DR = getRegisterNumber(bitrep, 11);
     int BaseR = getRegisterNumber(bitrep, 8);
     int boffset6 = convertOffset(bitrep, 5, 6);
-    int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
-    int valueToLoad = MEMORY[BaseRValue + boffset6];
-    NEXT_LATCHES.REGS[DR] = valueToLoad;
+
+    // FOR TESTING PURPOSES... delete below //
+    MEMORY[0x4000][0] = 0x0001; //
+    MEMORY[0x4000][1] = 0x0000; //
+    int BaseRValue = 0x4000; //
+
+
+    //int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
+    int valueToLoad = MEMORY[BaseRValue + boffset6][0] & 0x0F; // get bottom 8 bits
+
+    // ???IS THE SIGN PRESERVED IN valueToLoad
+
+    NEXT_LATCHES.REGS[DR] = valueToLoad & 0xFF;
     setCC(valueToLoad);
 }
 
@@ -597,8 +608,14 @@ void ldw(int bitrep[16]) {
     int DR = getRegisterNumber(bitrep, 11);
     int BaseR = getRegisterNumber(bitrep, 8);
     int offset6 = convertOffset(bitrep, 5, 6);
-    int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
-    int valueToLoad = MEMORY[BaseRValue + (offset6 << 1)];
+    int BaseRValue = Low16bits(CURRENT_LATCHES.REGS[BaseR]);
+    int valueToLoadLSB = Low16bits(MEMORY[BaseRValue + (offset6 << 1)][0]);
+    int valueToLoadMSB = Low16bits(MEMORY[BaseRValue + (offset6 << 1)][1]);
+
+    // MSB + LSB = Word
+    int valueToLoad = 0xFF & valueToLoadLSB; // valueToLoad gets low byte
+    valueToLoadMSB = valueToLoadMSB << 8; // MSB shifted to high byte
+    valueToLoad = valueToLoadMSB | valueToLoad; // valueToLoad is MSB + LSB
     NEXT_LATCHES.REGS[DR] = valueToLoad;
     setCC(valueToLoad);
 }
@@ -681,7 +698,6 @@ void rshfa(int bitrep[16]){
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
 }
 
-
 void stb(int bitrep[16]){
     int SR = getRegisterNumber(bitrep, 11);
     int BR = getRegisterNumber(bitrep, 8);
@@ -742,7 +758,7 @@ void process_instruction(){
             break;
 	    case(1):
 			add(bitrep);
-
+            break;
         case(2):
             ldb(bitrep);
             break;
@@ -750,7 +766,7 @@ void process_instruction(){
             jsr_(bitrep);
             break;
         case(3):
-            //stb
+            stb(bitrep);//stb
             break;
         case(5):
             and(bitrep);
