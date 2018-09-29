@@ -618,7 +618,7 @@ void lea(int bitrep[16]){
 
     int DR = getRegisterNumber(bitrep, 11);
     int off = convertOffset(bitrep, 8, 9);
-    NEXT_LATCHES.REGS[DR] = CURRENT_LATCHES.PC + (2*off); //remember to multiple offset by 2)
+    NEXT_LATCHES.REGS[DR] = NEXT_LATCHES.PC + (off << 1); //remember to multiple offset by 2)
 }
 
 void nop(int bitrep[16]){
@@ -695,11 +695,21 @@ void stb(int bitrep[16]){
     int offset = convertOffset(bitrep, 5, 6);
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
-    dec = (0x00FF) & dec;
     int base = CURRENT_LATCHES.REGS[BR];
-    base = base + (offset *2);
-    MEMORY[base][0] = dec;
-    MEMORY[base][1] = 0x0000;
+
+    if((offset%2) == 0){
+        //even, lsb
+        dec = (0x00FF) & dec;
+        base = (base + (offset *2))/2;
+        MEMORY[base][0] = dec;
+        MEMORY[base][1] = 0x0000;
+    }else{
+        //odd, msb
+        dec = (0xFF00) & dec;
+        base = (base + ((offset-1) *2))/2;
+        MEMORY[base][0] = 0x0000;
+        MEMORY[base][1] = dec;
+    }
 }
 
 void stw(int bitrep[16]){
@@ -712,10 +722,9 @@ void stw(int bitrep[16]){
     int LSB = dec & 0x00FF;
 
     int base = CURRENT_LATCHES.REGS[BR];
-    base = base + (offset * 2);
+    base = (base + (offset * 2))/2;
     MEMORY[base][0] = LSB;
     MEMORY[base][1] = MSB;
-
 }
 
 
