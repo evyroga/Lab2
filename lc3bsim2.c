@@ -511,12 +511,12 @@ void add(int bitrep[16]) {
 	if (bitrep[5] == 0) {
 		int SR2 = getRegisterNumber(bitrep,2);
 		result = CURRENT_LATCHES.REGS[SR1] + CURRENT_LATCHES.REGS[SR2];
-		NEXT_LATCHES.REGS[DR] = result;
+		NEXT_LATCHES.REGS[DR] = Low16bits(result);
 	}
 	else {
         int imm5 = convertOffset(bitrep, 4, 5);
         result = CURRENT_LATCHES.REGS[SR1] + imm5;
-        NEXT_LATCHES.REGS[DR] = result;
+        NEXT_LATCHES.REGS[DR] = Low16bits(result);
     }
 	//set condition codes;
 	setCC(result);
@@ -532,12 +532,12 @@ void and(int bitrep[16]) {
     if (bitrep[5] == 0) {
         int SR2 = getRegisterNumber(bitrep,2);
         result = CURRENT_LATCHES.REGS[SR1] & CURRENT_LATCHES.REGS[SR2];
-        NEXT_LATCHES.REGS[DR] = result;
+        NEXT_LATCHES.REGS[DR] = Low16bits(result);
     }
     else {
         int imm5 = convertOffset(bitrep, 4, 5);
-        int result = CURRENT_LATCHES.REGS[SR1] & imm5;
-        NEXT_LATCHES.REGS[DR] = result;
+        result = CURRENT_LATCHES.REGS[SR1] & imm5;
+        NEXT_LATCHES.REGS[DR] = Low16bits(result);
     }
     // set condition codes;
     setCC(result);
@@ -547,13 +547,17 @@ void br(int bitrep[16]){
     printf("Reached br\n");
     if (bitrep[11] && CURRENT_LATCHES.N || bitrep[10] && CURRENT_LATCHES.Z || bitrep[9] && CURRENT_LATCHES.P) {
         int PCoffset9 = convertOffset(bitrep, 8, 9);
-        int newPC = CURRENT_LATCHES.PC + (1 << PCoffset9);
-        NEXT_LATCHES.PC = CURRENT_LATCHES.PC + newPC;
+        int lshfPCOffset9 = PCoffset9 << 1;
+        int newPC = NEXT_LATCHES.PC + lshfPCOffset9;
+        NEXT_LATCHES.PC = newPC;
     }
+    // clear condition bits
+    NEXT_LATCHES.N = 0;
+    NEXT_LATCHES.Z = 0;
+    NEXT_LATCHES.P = 0;
 }
 
-// PLEASE FIX BELOW
-void trap_(int bitrep[16]) {
+void trap_(int bitrep[16]) { // alternatively, you can set PC = 0! But instructions say to implement like in Appendix A
     printf("Reached trap\n");
     // R7 = PC
     NEXT_LATCHES.REGS[7] = CURRENT_LATCHES.PC;
@@ -562,7 +566,9 @@ void trap_(int bitrep[16]) {
     if(unsignedValue == 37) { // Reached HALT
         NEXT_LATCHES.PC = 0x25;
     }
-    int pcValue = MEMORY[(unsignedValue << 1)];
+    int lshfUnsignedValue = unsignedValue << 1;
+    int address = lshfUnsignedValue >> 1;
+    int pcValue = MEMORY[address][0]; // the trap vector table will be set to 0
     NEXT_LATCHES.PC = pcValue;
 }
 
@@ -584,14 +590,29 @@ void ldb(int bitrep[16]) {
     int DR = getRegisterNumber(bitrep, 11);
     int BaseR = getRegisterNumber(bitrep, 8);
     int boffset6 = convertOffset(bitrep, 5, 6);
+    int isOdd = 0;
+    int valueToLoad = 0xDEADBEEF;
 
+    // size of memory location is 4 bytes ~ 32 bits
     int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
-    int address = (BaseRValue + boffset6)/2;
-    int valueToLoad = MEMORY[address][0] & 0x0F; // get bottom 8 bits
+    int baseAddress = BaseRValue >> 1;
 
-    // ???IS THE SIGN PRESERVED IN valueToLoad
-
-    NEXT_LATCHES.REGS[DR] = valueToLoad & 0xFF;
+    // if offset is odd, access the MSB
+    if(boffset6 %2 == 1) {
+        isOdd = 1;
+    }
+    boffset6 = boffset6 >> 1;
+    int address = baseAddress + boffset6;
+    if (isOdd) {
+        valueToLoad = MEMORY[address][1] & 0xFF;
+        valueToLoad = valueToLoad << 24;         // sign extend
+        valueToLoad = valueToLoad >> 24;
+    } else {
+        valueToLoad = MEMORY[address][0] & 0xFF;
+        valueToLoad = valueToLoad << 24;         // sign extend
+        valueToLoad = valueToLoad >> 24;
+    }
+    NEXT_LATCHES.REGS[DR] = Low16bits(valueToLoad); //  & 0xFF;
     setCC(valueToLoad);
 }
 
@@ -599,15 +620,17 @@ void ldw(int bitrep[16]) {
     int DR = getRegisterNumber(bitrep, 11);
     int BaseR = getRegisterNumber(bitrep, 8);
     int offset6 = convertOffset(bitrep, 5, 6);
-    int BaseRValue = Low16bits(CURRENT_LATCHES.REGS[BaseR]);
-    int valueToLoadLSB = Low16bits(MEMORY[BaseRValue + (offset6 << 1)][0]);
-    int valueToLoadMSB = Low16bits(MEMORY[BaseRValue + (offset6 << 1)][1]);
+    int BaseRValue = CURRENT_LATCHES.REGS[BaseR];
+    int valueToLoadLSB = Low16bits(MEMORY[(BaseRValue >> 1) + offset6][0]);
+    int valueToLoadMSB = Low16bits(MEMORY[(BaseRValue >> 1) + offset6][1]);
 
     // MSB + LSB = Word
-    int valueToLoad = 0xFF & valueToLoadLSB; // valueToLoad gets low byte
-    valueToLoadMSB = valueToLoadMSB << 8; // MSB shifted to high byte
+    int valueToLoad = 0x00FF & valueToLoadLSB; // valueToLoad gets low byte
+    valueToLoadMSB = 0xFF00 & ( valueToLoadMSB << 8 ); // MSB shifted to high byte
     valueToLoad = valueToLoadMSB | valueToLoad; // valueToLoad is MSB + LSB
-    NEXT_LATCHES.REGS[DR] = valueToLoad;
+    valueToLoad = valueToLoad << 16;
+    valueToLoad = valueToLoad >> 16;
+    NEXT_LATCHES.REGS[DR] = Low16bits(valueToLoad);
     setCC(valueToLoad);
 }
 
@@ -618,7 +641,7 @@ void lea(int bitrep[16]){
 
     int DR = getRegisterNumber(bitrep, 11);
     int off = convertOffset(bitrep, 8, 9);
-    NEXT_LATCHES.REGS[DR] = CURRENT_LATCHES.PC + (2*off); //remember to multiple offset by 2)
+    NEXT_LATCHES.REGS[DR] = NEXT_LATCHES.PC + (off << 1); //remember to multiple offset by 2)
 }
 
 void nop(int bitrep[16]){
@@ -735,6 +758,8 @@ void process_instruction(){
 	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
 	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
 
+	if (decLSB == 0 && decMSB == 0) printf("PC is 0. Shell will halt simulation.");
+
 	int bitrep[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	decToBitRep(decLSB, decMSB, bitrep);
 
@@ -798,11 +823,4 @@ void process_instruction(){
 			printf("Invalid opcode");
 			break;
 	}
-
-	// clear n,z,p
-	NEXT_LATCHES.N = 0;
-	NEXT_LATCHES.Z = 0;
-	NEXT_LATCHES.P = 0;
-
-
 }
