@@ -482,9 +482,24 @@ int getRegisterNumber(int bitrep[16], int index) {
  * Set condition codes based on value obtained (usually in DR).
  */
 void setCC (int value) {
-    if (value > 0) NEXT_LATCHES.P = 1;
-    if (value == 0) NEXT_LATCHES.Z = 1;
-    if (value < 0) NEXT_LATCHES.N = 1;
+    if (value > 0) {
+        NEXT_LATCHES.P = 1;
+    }
+    else {
+        NEXT_LATCHES.P = 0;
+    }
+    if (value == 0) {
+        NEXT_LATCHES.Z = 1;
+    }
+    else {
+        NEXT_LATCHES.Z = 0;
+    }
+    if (value < 0) {
+        NEXT_LATCHES.N = 1;
+    }
+    else {
+        NEXT_LATCHES.N = 0;
+    }
 }
 
 /*
@@ -563,25 +578,25 @@ void trap_(int bitrep[16]) { // alternatively, you can set PC = 0! But instructi
     NEXT_LATCHES.REGS[7] = CURRENT_LATCHES.PC;
 
     int unsignedValue = getUnsignedValue(bitrep, 7, 8);
-    if(unsignedValue == 37) { // Reached HALT
-        NEXT_LATCHES.PC = 0x25;
-    }
     int lshfUnsignedValue = unsignedValue << 1;
     int address = lshfUnsignedValue >> 1;
+    if(unsignedValue == 0x25) { // Reached HALT
+        NEXT_LATCHES.PC = MEMORY[address][0];
+    }
     int pcValue = MEMORY[address][0]; // the trap vector table will be set to 0
     NEXT_LATCHES.PC = pcValue;
 }
 
 void jsr_(int bitrep[16]) {
     // make sure you GET RIGHT LATCHES... change below to NEXT_LATCHES???
-    int temp = CURRENT_LATCHES.PC;
+    int temp = NEXT_LATCHES.PC;
     if (bitrep[11] == 0) {
         int baseR = getRegisterNumber(bitrep, 8);
         NEXT_LATCHES.PC = CURRENT_LATCHES.REGS[baseR];
     }
     else if (bitrep[11]){
         int PCoffset11 = convertOffset(bitrep, 10, 11);
-        NEXT_LATCHES.PC = CURRENT_LATCHES.PC + (PCoffset11 << 1);
+        NEXT_LATCHES.PC = NEXT_LATCHES.PC + (PCoffset11 << 1);
     }
     NEXT_LATCHES.REGS[7] = temp;
 }
@@ -718,21 +733,11 @@ void stb(int bitrep[16]){
     int offset = convertOffset(bitrep, 5, 6);
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
+    dec = (0x00FF) & dec;
     int base = CURRENT_LATCHES.REGS[BR];
-
-    if((offset%2) == 0){
-        //even, lsb
-        dec = (0x00FF) & dec;
-        base = (base + (offset *2))/2;
-        MEMORY[base][0] = dec;
-        MEMORY[base][1] = 0x0000;
-    }else{
-        //odd, msb
-        dec = (0xFF00) & dec;
-        base = (base + ((offset-1) *2))/2;
-        MEMORY[base][0] = 0x0000;
-        MEMORY[base][1] = dec;
-    }
+    base = base + (offset *2);
+    MEMORY[base][0] = dec;
+    MEMORY[base][1] = 0x0000;
 }
 
 void stw(int bitrep[16]){
@@ -745,9 +750,10 @@ void stw(int bitrep[16]){
     int LSB = dec & 0x00FF;
 
     int base = CURRENT_LATCHES.REGS[BR];
-    base = (base + (offset * 2))/2;
+    base = base + (offset * 2);
     MEMORY[base][0] = LSB;
     MEMORY[base][1] = MSB;
+
 }
 
 
