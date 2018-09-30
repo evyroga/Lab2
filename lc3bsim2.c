@@ -3,10 +3,10 @@
     in this comment.
     REFER TO THE SUBMISSION INSTRUCTION FOR DETAILS
 
-    Name 1: Full name of the first partner 
-    Name 2: Full name of the second partner
-    UTEID 1: UT EID of the first partner
-    UTEID 2: UT EID of the second partner
+    Name 1: Vivian Nguyen
+    Name 2: Morgan Murrell
+    UTEID 1: vmn269
+    UTEID 2: mmm6855
 */
 
 /***************************************************************/
@@ -683,6 +683,7 @@ void notxor(int bitrep[16]){
         int dec = (CURRENT_LATCHES.REGS[SR1]) ^ (CURRENT_LATCHES.REGS[SR2]);
         NEXT_LATCHES.REGS[DR] = Low16bits(dec);
     }
+    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void retjmp(int bitrep[16]){
@@ -696,6 +697,7 @@ void lshf(int bitrep[16]){
     int shift = convertOffset(bitrep, 3, 4);
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void rshfl(int bitrep[16]){
@@ -717,6 +719,7 @@ void rshfl(int bitrep[16]){
         val = val >> shift;
         NEXT_LATCHES.REGS[DR] = Low16bits(val);
     }
+    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void rshfa(int bitrep[16]){
@@ -725,6 +728,7 @@ void rshfa(int bitrep[16]){
     int shift = convertOffset(bitrep, 3,4);
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void stb(int bitrep[16]){
