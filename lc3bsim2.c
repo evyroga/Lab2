@@ -667,9 +667,9 @@ void notxor(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR1 = getRegisterNumber(bitrep, 8);
 
-    if(bitrep[5] == 0){
+    if(bitrep[5] == 1){
         int imm = convertOffset(bitrep, 4,5);
-        if(imm == -15){
+        if(imm == -1){
             //not...
             int dec = ~(CURRENT_LATCHES.REGS[SR1]);
             NEXT_LATCHES.REGS[DR] = Low16bits(dec);
@@ -695,6 +695,9 @@ void lshf(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
     int shift = convertOffset(bitrep, 3, 4);
+    if(shift < 0){
+        shift = shift + 16;
+    }
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
     setCC(NEXT_LATCHES.REGS[DR]);
@@ -703,8 +706,10 @@ void lshf(int bitrep[16]){
 void rshfl(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
-
     int shift = convertOffset(bitrep, 3, 4);
+    if(shift < 0){
+        shift = shift + 16;
+    }
     int val = CURRENT_LATCHES.REGS[SR];
     if(val < 0){
         int shift_and = 0;
@@ -726,6 +731,9 @@ void rshfa(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
     int shift = convertOffset(bitrep, 3,4);
+    if(shift < 0){
+        shift = shift + 16;
+    }
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
     setCC(NEXT_LATCHES.REGS[DR]);
