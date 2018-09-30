@@ -737,11 +737,20 @@ void stb(int bitrep[16]){
     int offset = convertOffset(bitrep, 5, 6);
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
-    dec = (0x00FF) & dec;
+
     int base = CURRENT_LATCHES.REGS[BR];
-    base = base + (offset *2);
-    MEMORY[base][0] = dec;
-    MEMORY[base][1] = 0x0000;
+    if((offset %2) == 0){
+        dec = (0x00FF) & dec;
+        base = (base + (offset *2))/2;
+        MEMORY[base][0] = dec;
+        MEMORY[base][1] = 0x0000;
+    }else{
+        dec = (0xFF00) & dec;
+        base = (base + ((offset-1) * 2))/2;
+        MEMORY[base][0] = dec;
+        MEMORY[base][1] = 0x0000;
+    }
+
 }
 
 void stw(int bitrep[16]){
@@ -754,7 +763,7 @@ void stw(int bitrep[16]){
     int LSB = dec & 0x00FF;
 
     int base = CURRENT_LATCHES.REGS[BR];
-    base = base + (offset * 2);
+    base = (base + (offset * 2))/2;
     MEMORY[base][0] = LSB;
     MEMORY[base][1] = MSB;
 
