@@ -1,7 +1,7 @@
 /*
     Name 1: Vivian Nguyen
-    Name 2: Morgan Murrell
     UTEID 1: vmn296
+    Name 2: Morgan Murrell
     UTEID 2: mmm6855
 */
 
