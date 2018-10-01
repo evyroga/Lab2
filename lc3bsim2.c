@@ -1,8 +1,12 @@
 /*
-    Name 1: Vivian Nguyen
-    UTEID 1: vmn296
-    Name 2: Morgan Murrell
-    UTEID 2: mmm6855
+    Remove all unnecessary lines (including this one) 
+    in this comment.
+    REFER TO THE SUBMISSION INSTRUCTION FOR DETAILS
+
+    Name 1: Full name of the first partner 
+    Name 2: Full name of the second partner
+    UTEID 1: UT EID of the first partner
+    UTEID 2: UT EID of the second partner
 */
 
 /***************************************************************/
@@ -530,6 +534,8 @@ void add(int bitrep[16]) {
         NEXT_LATCHES.REGS[DR] = Low16bits(result);
     }
 	//set condition codes;
+	result = result << 16;
+	result = result >> 16;
 	setCC(result);
 }
 
@@ -551,6 +557,8 @@ void and(int bitrep[16]) {
         NEXT_LATCHES.REGS[DR] = Low16bits(result);
     }
     // set condition codes;
+    result = result << 16;
+    result = result >> 16;
     setCC(result);
 }
 
@@ -561,6 +569,10 @@ void br(int bitrep[16]){
         int lshfPCOffset9 = PCoffset9 << 1;
         int newPC = NEXT_LATCHES.PC + lshfPCOffset9;
         NEXT_LATCHES.PC = newPC;
+        // clear condition bits if branch is taken
+        NEXT_LATCHES.N = 0;
+        NEXT_LATCHES.Z = 0;
+        NEXT_LATCHES.P = 0;
     }
 }
 
@@ -659,9 +671,9 @@ void notxor(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR1 = getRegisterNumber(bitrep, 8);
 
-    if(bitrep[5] == 1){
+    if(bitrep[5] == 0){
         int imm = convertOffset(bitrep, 4,5);
-        if(imm == -1){
+        if(imm == -15){
             //not...
             int dec = ~(CURRENT_LATCHES.REGS[SR1]);
             NEXT_LATCHES.REGS[DR] = Low16bits(dec);
@@ -675,7 +687,6 @@ void notxor(int bitrep[16]){
         int dec = (CURRENT_LATCHES.REGS[SR1]) ^ (CURRENT_LATCHES.REGS[SR2]);
         NEXT_LATCHES.REGS[DR] = Low16bits(dec);
     }
-    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void retjmp(int bitrep[16]){
@@ -687,21 +698,15 @@ void lshf(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
     int shift = convertOffset(bitrep, 3, 4);
-    if(shift < 0){
-        shift = shift + 16;
-    }
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
-    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void rshfl(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
+
     int shift = convertOffset(bitrep, 3, 4);
-    if(shift < 0){
-        shift = shift + 16;
-    }
     int val = CURRENT_LATCHES.REGS[SR];
     if(val < 0){
         int shift_and = 0;
@@ -716,19 +721,14 @@ void rshfl(int bitrep[16]){
         val = val >> shift;
         NEXT_LATCHES.REGS[DR] = Low16bits(val);
     }
-    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void rshfa(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
     int shift = convertOffset(bitrep, 3,4);
-    if(shift < 0){
-        shift = shift + 16;
-    }
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
-    setCC(NEXT_LATCHES.REGS[DR]);
 }
 
 void stb(int bitrep[16]){
@@ -737,20 +737,11 @@ void stb(int bitrep[16]){
     int offset = convertOffset(bitrep, 5, 6);
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
-
+    dec = (0x00FF) & dec;
     int base = CURRENT_LATCHES.REGS[BR];
-    if((offset %2) == 0){
-        dec = (0x00FF) & dec;
-        base = (base + (offset *2))/2;
-        MEMORY[base][0] = dec;
-        MEMORY[base][1] = 0x0000;
-    }else{
-        dec = (0xFF00) & dec;
-        base = (base + ((offset-1) * 2))/2;
-        MEMORY[base][0] = dec;
-        MEMORY[base][1] = 0x0000;
-    }
-
+    base = base + (offset *2);
+    MEMORY[base][0] = dec;
+    MEMORY[base][1] = 0x0000;
 }
 
 void stw(int bitrep[16]){
@@ -763,7 +754,7 @@ void stw(int bitrep[16]){
     int LSB = dec & 0x00FF;
 
     int base = CURRENT_LATCHES.REGS[BR];
-    base = (base + (offset * 2))/2;
+    base = base + (offset * 2);
     MEMORY[base][0] = LSB;
     MEMORY[base][1] = MSB;
 
@@ -779,10 +770,14 @@ void process_instruction(){
    *       -Execute
    *       -Update NEXT_LATCHES
    */     
+	printf("CURRENT PC: %d\n", CURRENT_LATCHES.PC);
+	printf("LSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][0]); 	
+	printf("MSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][1]);
    
 	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
 	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
 
+	if (decLSB == 0 && decMSB == 0) printf("PC is 0. Shell will halt simulation.");
 
 	int bitrep[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	decToBitRep(decLSB, decMSB, bitrep);
