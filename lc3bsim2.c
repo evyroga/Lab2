@@ -665,17 +665,23 @@ void notxor(int bitrep[16]){
             //not...
             int dec = ~(CURRENT_LATCHES.REGS[SR1]);
             NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+            dec = dec << 16;
+            setCC(dec);
         }else{
             //xor with imm5
             int dec = (CURRENT_LATCHES.REGS[SR1]) ^ imm;
             NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+            dec = dec << 16;
+            setCC(dec);
         }
     }else{
         int SR2 = getRegisterNumber(bitrep, 2);
         int dec = (CURRENT_LATCHES.REGS[SR1]) ^ (CURRENT_LATCHES.REGS[SR2]);
         NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+        dec = dec << 16;
+        setCC(dec);
     }
-    setCC(NEXT_LATCHES.REGS[DR]);
+
 }
 
 void retjmp(int bitrep[16]){
@@ -692,7 +698,9 @@ void lshf(int bitrep[16]){
     }
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
-    setCC(NEXT_LATCHES.REGS[DR]);
+
+    dec = dec << 16;
+    setCC(dec);
 }
 
 void rshfl(int bitrep[16]){
@@ -711,12 +719,16 @@ void rshfl(int bitrep[16]){
         shift_and = ~(shift_and << (16 - shift));
         val = val & shift_and;
         NEXT_LATCHES.REGS[DR] = Low16bits(val);
+        val = val << 16;
+        setCC(val);
 
     }else{
         val = val >> shift;
         NEXT_LATCHES.REGS[DR] = Low16bits(val);
+        val = val << 16;
+        setCC(val);
     }
-    setCC(NEXT_LATCHES.REGS[DR]);
+
 }
 
 void rshfa(int bitrep[16]){
@@ -729,6 +741,8 @@ void rshfa(int bitrep[16]){
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
     setCC(NEXT_LATCHES.REGS[DR]);
+    dec = dec << 16;
+    setCC(dec);
 }
 
 void stb(int bitrep[16]){
@@ -778,7 +792,7 @@ void process_instruction(){
    *       -Decode 
    *       -Execute
    *       -Update NEXT_LATCHES
-   */     
+   */
    
 	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
 	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
