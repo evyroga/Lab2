@@ -677,16 +677,26 @@ void notxor(int bitrep[16]){
             //not...
             int dec = ~(CURRENT_LATCHES.REGS[SR1]);
             NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+            dec = dec << 16;
+            setCC(dec);
         }else{
             //xor with imm5
             int dec = (CURRENT_LATCHES.REGS[SR1]) ^ imm;
             NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+            dec = dec << 16;
+            setCC(dec);
         }
     }else{
         int SR2 = getRegisterNumber(bitrep, 2);
         int dec = (CURRENT_LATCHES.REGS[SR1]) ^ (CURRENT_LATCHES.REGS[SR2]);
         NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+        dec = dec << 16;
+        setCC(dec);
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void retjmp(int bitrep[16]){
@@ -700,6 +710,12 @@ void lshf(int bitrep[16]){
     int shift = convertOffset(bitrep, 3, 4);
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+<<<<<<< HEAD
+=======
+
+    dec = dec << 16;
+    setCC(dec);
+>>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void rshfl(int bitrep[16]){
@@ -716,11 +732,19 @@ void rshfl(int bitrep[16]){
         shift_and = ~(shift_and << (16 - shift));
         val = val & shift_and;
         NEXT_LATCHES.REGS[DR] = Low16bits(val);
+        val = val << 16;
+        setCC(val);
 
     }else{
         val = val >> shift;
         NEXT_LATCHES.REGS[DR] = Low16bits(val);
+        val = val << 16;
+        setCC(val);
     }
+<<<<<<< HEAD
+=======
+
+>>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void rshfa(int bitrep[16]){
@@ -729,6 +753,12 @@ void rshfa(int bitrep[16]){
     int shift = convertOffset(bitrep, 3,4);
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
+<<<<<<< HEAD
+=======
+    setCC(NEXT_LATCHES.REGS[DR]);
+    dec = dec << 16;
+    setCC(dec);
+>>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void stb(int bitrep[16]){
@@ -769,10 +799,14 @@ void process_instruction(){
    *       -Decode 
    *       -Execute
    *       -Update NEXT_LATCHES
+<<<<<<< HEAD
    */     
 	printf("CURRENT PC: %d\n", CURRENT_LATCHES.PC);
 	printf("LSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][0]); 	
 	printf("MSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][1]);
+=======
+   */
+>>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
    
 	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
 	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
