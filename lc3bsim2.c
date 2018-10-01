@@ -693,10 +693,6 @@ void notxor(int bitrep[16]){
         dec = dec << 16;
         setCC(dec);
     }
-<<<<<<< HEAD
-=======
-
->>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void retjmp(int bitrep[16]){
@@ -710,12 +706,9 @@ void lshf(int bitrep[16]){
     int shift = convertOffset(bitrep, 3, 4);
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
-<<<<<<< HEAD
-=======
 
     dec = dec << 16;
     setCC(dec);
->>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void rshfl(int bitrep[16]){
@@ -741,10 +734,6 @@ void rshfl(int bitrep[16]){
         val = val << 16;
         setCC(val);
     }
-<<<<<<< HEAD
-=======
-
->>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void rshfa(int bitrep[16]){
@@ -753,12 +742,9 @@ void rshfa(int bitrep[16]){
     int shift = convertOffset(bitrep, 3,4);
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
-<<<<<<< HEAD
-=======
     setCC(NEXT_LATCHES.REGS[DR]);
     dec = dec << 16;
     setCC(dec);
->>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
 }
 
 void stb(int bitrep[16]){
@@ -799,19 +785,11 @@ void process_instruction(){
    *       -Decode 
    *       -Execute
    *       -Update NEXT_LATCHES
-<<<<<<< HEAD
    */     
-	printf("CURRENT PC: %d\n", CURRENT_LATCHES.PC);
-	printf("LSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][0]); 	
-	printf("MSB: %x\n", MEMORY[CURRENT_LATCHES.PC >> 1][1]);
-=======
-   */
->>>>>>> a706cf1f4073798fed4f61fdc9727f2dd851508a
    
 	int decLSB = MEMORY[CURRENT_LATCHES.PC >> 1][0];
 	int decMSB = MEMORY[CURRENT_LATCHES.PC >> 1][1];
 
-	if (decLSB == 0 && decMSB == 0) printf("PC is 0. Shell will halt simulation.");
 
 	int bitrep[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 	decToBitRep(decLSB, decMSB, bitrep);
