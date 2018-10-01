@@ -3,10 +3,10 @@
     in this comment.
     REFER TO THE SUBMISSION INSTRUCTION FOR DETAILS
 
-    Name 1: Full name of the first partner 
-    Name 2: Full name of the second partner
-    UTEID 1: UT EID of the first partner
-    UTEID 2: UT EID of the second partner
+    Name 1: Vivian Nguyen 
+    Name 2: Morgan Murrell
+    UTEID 1: vmn269
+    UTEID 2: mmm6855
 */
 
 /***************************************************************/
@@ -704,6 +704,9 @@ void lshf(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
     int shift = convertOffset(bitrep, 3, 4);
+    if(shift < 0){
+        shift = shift + 16;
+    }
     int dec = CURRENT_LATCHES.REGS[SR] << shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
 
@@ -714,8 +717,10 @@ void lshf(int bitrep[16]){
 void rshfl(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
-
     int shift = convertOffset(bitrep, 3, 4);
+    if(shift < 0){
+        shift = shift + 16;
+    }
     int val = CURRENT_LATCHES.REGS[SR];
     if(val < 0){
         int shift_and = 0;
@@ -734,12 +739,16 @@ void rshfl(int bitrep[16]){
         val = val << 16;
         setCC(val);
     }
+
 }
 
 void rshfa(int bitrep[16]){
     int DR = getRegisterNumber(bitrep, 11);
     int SR = getRegisterNumber(bitrep, 8);
     int shift = convertOffset(bitrep, 3,4);
+    if(shift < 0){
+        shift = shift + 16;
+    }
     int dec = CURRENT_LATCHES.REGS[SR] >> shift;
     NEXT_LATCHES.REGS[DR] = Low16bits(dec);
     setCC(NEXT_LATCHES.REGS[DR]);
@@ -747,17 +756,27 @@ void rshfa(int bitrep[16]){
     setCC(dec);
 }
 
+
 void stb(int bitrep[16]){
     int SR = getRegisterNumber(bitrep, 11);
     int BR = getRegisterNumber(bitrep, 8);
     int offset = convertOffset(bitrep, 5, 6);
 
     int dec = Low16bits(CURRENT_LATCHES.REGS[SR]);
-    dec = (0x00FF) & dec;
+
     int base = CURRENT_LATCHES.REGS[BR];
-    base = base + (offset *2);
-    MEMORY[base][0] = dec;
-    MEMORY[base][1] = 0x0000;
+    if((offset %2) == 0){
+        dec = (0x00FF) & dec;
+        base = (base + (offset *2))/2;
+        MEMORY[base][0] = dec;
+        MEMORY[base][1] = 0x0000;
+    }else{
+        dec = (0xFF00) & dec;
+        base = (base + ((offset-1) * 2))/2;
+        MEMORY[base][0] = dec;
+        MEMORY[base][1] = 0x0000;
+    }
+
 }
 
 void stw(int bitrep[16]){
@@ -770,7 +789,7 @@ void stw(int bitrep[16]){
     int LSB = dec & 0x00FF;
 
     int base = CURRENT_LATCHES.REGS[BR];
-    base = base + (offset * 2);
+    base = (base + (offset * 2))/2;
     MEMORY[base][0] = LSB;
     MEMORY[base][1] = MSB;
 
